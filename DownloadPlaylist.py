@@ -8,7 +8,7 @@ if dependencies.proceed:
     from time import sleep
     import pafy
 
-    pafy.set_api_key("AIzaSyBFhNzsCk8YhXsTacBxKm-_Jd9rKhSvrsc")   #API key can be found at Google Cloud Platform,
+    pafy.set_api_key("")   #API key can be found at Google Cloud Platform,
                                          #after creating a project and enabling YouTube Data API v3
 
     def DownloadPlaylist():
