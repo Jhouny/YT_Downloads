@@ -1,4 +1,4 @@
-from funtions import *
+from functions import *
 from time import sleep
 import pafy
 
