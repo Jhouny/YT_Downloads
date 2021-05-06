@@ -1,4 +1,4 @@
-from downloadFunctions import *
+from funtions import *
 from time import sleep
 import pafy
 
