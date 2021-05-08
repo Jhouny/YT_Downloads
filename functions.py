@@ -39,21 +39,50 @@ logger = logging.getLogger(__name__)
 #assigning a global folder to contain all the files and data the code needs to run
 rootDir = os.getcwd().split('\\')[0]
 globalFolder = os.path.join(rootDir, "\\YT_Data")
+forbiddenChr = ['\\',
+            '/',
+            '?',
+            '<',
+            '>',
+            ',',
+            '|',
+            ':',
+            '*',
+            '"',]
+
+
+def TitleStandardization(title, forbiddenChars, simpleImDown_folder=False):
+    if simpleImDown_folder==True:
+        forbiddenChars.append(' ')
+    T = ""
+    for ind in range(len(title)):
+        char = title[ind]
+        if ( ord(char) < 31 ) or ( ord(char) > 126 ) or ( char in forbiddenChars ):
+            T += "_"
+        elif ( ind == len(title)-1 ) and ( char in [' ', '.'] ):
+            T += "_"
+        else:
+            T += title[ind]
+    return T
 
 #Find if 'file' is in the 'path' provided
-def find(file, path, ext):
+def find(file, path, ext='webm'):
     contains = False
     nm = ""
+    asExt = False
     for root, dirs, files in os.walk(path):
         for name in files:
-            if (name == file or ".".join(name.split('.')[:-1]) == file) and name.split('.')[-1] == ext:
+            # if (name == file or ".".join(name.split('.')[:-1]) == file) and name.split('.')[-1] == ext:
+            if ( name == file or ".".join(name.split('.')[:-1]) == file ):
                 contains = True
                 nm = name
+                if name.split('.')[-1] == ext:      #If file exists, checks if the extension is the desired one
+                    asExt = True
                 break
             else:
                 contains = False
                 nm = name
-    return contains, nm
+    return contains, nm, asExt
 
 #Convert .webm file to .mp3
 def Cvt2Mp3(loc, f_name):
@@ -61,24 +90,16 @@ def Cvt2Mp3(loc, f_name):
     file_type = f_name.split('.')[-1]
 
     file = os.path.join(loc, file_name)
+    renamed = TitleStandardization(file_name, forbiddenChr)
+    print(renamed)
+    rnmFile = os.path.join(loc, renamed)
 
     aud_file = audio.from_file("%s"%(file+"."+file_type), format=file_type)          #Converting .webm file to .mp3
     os.remove((file+"."+file_type))
-    aud_file.export("%s"%(file+".mp3"), format="mp3")
+    aud_file.export("%s"%(rnmFile+".mp3"), format="mp3")
 
 def standardizeTitle(title):
     forbidden = ['/', '?', '<', '>', "|", ',']
-    T = ""
-    for ind in range(len(title)):
-        if title[ind].lower() in forbidden:
-            T += "_"
-        else:
-            T += title[ind]
-
-    return T
-
-def folderTitlteStandardization(title):
-    forbidden = ['/', '?', '<', '>', ' ', ',', '|', ' ']
     T = ""
     for ind in range(len(title)):
         if title[ind].lower() in forbidden:
@@ -92,22 +113,22 @@ def GetMetadata(file, aud):
     path = os.path.abspath(file)    #Get file's absolute path (as a string)
     pivotFile = os.path.join(globalFolder, "pivotFile.mp3") #Creates a pivotFile to manage copying, deleting and updating the original file
     simpleImagesFolder = os.path.join(globalFolder, "simple_images")    #Variable to contain the folder path of thumbnails
-    thumbnailFolder = os.path.join(simpleImagesFolder, folderTitlteStandardization(aud.title))    #"~~THE USED LIBRARY AUTOMATICALLY CREATES A FOLDER CALLED 'simple_images'"
-
+    thumbnailFolder = os.path.join(simpleImagesFolder, TitleStandardization(aud.title, forbiddenChr, simpleImDown_folder=True))    #"~~THE USED LIBRARY AUTOMATICALLY CREATES A FOLDER CALLED 'simple_images'"
+    print('0')
     #These lines download the thumbnails from google using the title of the video
-    response = simp.simple_image_download()
-    response.download(standardizeTitle(aud.title), 5)
-
+    # response = simp.simple_image_download()
+    simp().download(TitleStandardization(aud.title, forbiddenChr, simpleImDown_folder=True), 5, progressBar=False)
+    print('1')
     #Move original file to the temp. one
     shutil.move(path, pivotFile)
-
+    print('2')
     #Randomly choses one of the 5 thumbails returned from google search engine
     images = [i for g, h, i in os.walk(thumbnailFolder)]
     thumbnail = os.path.join(thumbnailFolder, choice(os.listdir(thumbnailFolder)))
-
+    print("Thumbnail: ", thumbnail)
+    print("Path: ", path)
     #Joins the thumbnail and the video
     os.system("""ffmpeg -loglevel warning -i "%s" -i "%s" -map_metadata 0 -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v comment="Cover (front)" "%s" """%(pivotFile, thumbnail, path))
-
 
     #Provides metadata properties to the file
     audio = EasyID3(str(path))
