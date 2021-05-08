@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 #Getting the user's root directory ('C:', 'D:', etc.) and
 #assigning a global folder to contain all the files and data the code needs to run
 rootDir = os.getcwd().split('\\')[0]
-globalFolder = os.path.join(rootDir, "\\YT_Data")
+globalFolder = os.getcwd()#os.path.join(rootDir, "\\YT_Data")
 forbiddenChr = ['\\',
             '/',
             '?',
@@ -63,6 +63,7 @@ def TitleStandardization(title, forbiddenChars, simpleImDown_folder=False):
             T += "_"
         else:
             T += title[ind]
+    print(T)
     return T
 
 #Find if 'file' is in the 'path' provided
@@ -88,50 +89,21 @@ def find(file, path, ext='webm'):
 def Cvt2Mp3(loc, f_name):
     file_name = ".".join(f_name.split('.')[:-1]) if len(f_name.split('.')) > 1 else f_name
     file_type = f_name.split('.')[-1]
-
+    #
     file = os.path.join(loc, file_name)
     renamed = TitleStandardization(file_name, forbiddenChr)
     print(renamed)
     rnmFile = os.path.join(loc, renamed)
-
+    #
     aud_file = audio.from_file("%s"%(file+"."+file_type), format=file_type)          #Converting .webm file to .mp3
     os.remove((file+"."+file_type))
-    aud_file.export("%s"%(rnmFile+".mp3"), format="mp3")
+    aud_file.export(rnmFile+".mp3", format="mp3")
+    #
+    return rnmFile+".mp3"
 
-def standardizeTitle(title):
-    forbidden = ['/', '?', '<', '>', "|", ',']
-    T = ""
-    for ind in range(len(title)):
-        if title[ind].lower() in forbidden:
-            T += "_"
-        else:
-            T += title[ind]
-
-    return T
-
-def GetMetadata(file, aud):
-    path = os.path.abspath(file)    #Get file's absolute path (as a string)
-    pivotFile = os.path.join(globalFolder, "pivotFile.mp3") #Creates a pivotFile to manage copying, deleting and updating the original file
-    simpleImagesFolder = os.path.join(globalFolder, "simple_images")    #Variable to contain the folder path of thumbnails
-    thumbnailFolder = os.path.join(simpleImagesFolder, TitleStandardization(aud.title, forbiddenChr, simpleImDown_folder=True))    #"~~THE USED LIBRARY AUTOMATICALLY CREATES A FOLDER CALLED 'simple_images'"
-    print('0')
-    #These lines download the thumbnails from google using the title of the video
-    # response = simp.simple_image_download()
-    simp().download(TitleStandardization(aud.title, forbiddenChr, simpleImDown_folder=True), 5, progressBar=False)
-    print('1')
-    #Move original file to the temp. one
-    shutil.move(path, pivotFile)
-    print('2')
-    #Randomly choses one of the 5 thumbails returned from google search engine
-    images = [i for g, h, i in os.walk(thumbnailFolder)]
-    thumbnail = os.path.join(thumbnailFolder, choice(os.listdir(thumbnailFolder)))
-    print("Thumbnail: ", thumbnail)
-    print("Path: ", path)
-    #Joins the thumbnail and the video
-    os.system("""ffmpeg -loglevel warning -i "%s" -i "%s" -map_metadata 0 -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v comment="Cover (front)" "%s" """%(pivotFile, thumbnail, path))
-
+def addVideoMetadata(file, aud):
     #Provides metadata properties to the file
-    audio = EasyID3(str(path))
+    audio = EasyID3(path)
     audio['artist'] = aud.author
     audio['performer'] = aud.author
     audio['composer'] = aud.author
@@ -140,10 +112,32 @@ def GetMetadata(file, aud):
     audio['originaldate'] = aud.published.split('-')[0]
     audio.save()
 
+def GetMetadata(file, aud):
+    path = os.path.abspath(file)    #Get file's absolute path (as a string)
+
+    pivotFile = os.path.join(globalFolder, "pivotFile.mp3") #Creates a pivotFile to manage copying, deleting and updating the original file
+    simpleImagesFolder = os.path.join(globalFolder, "simple_images")    #Variable to contain the folder path of thumbnails
+    thumbnailFolder = os.path.join(simpleImagesFolder, TitleStandardization(aud.title, forbiddenChr, simpleImDown_folder=True))    #"~~THE USED LIBRARY AUTOMATICALLY CREATES A FOLDER CALLED 'simple_images'"
+
+    #These lines download the thumbnails from google using the title of the video
+    # response = simp.simple_image_download()
+    simp().download(TitleStandardization(aud.title, forbiddenChr, simpleImDown_folder=True), 5, progressBar=False)
+
+    #Move original file to the temp. one
+    shutil.move(path, pivotFile)
+
+    #Randomly choses one of the 5 thumbails returned from google search engine
+    images = [i for g, h, i in os.walk(thumbnailFolder)]
+    thumbnail = os.path.join(thumbnailFolder, choice(os.listdir(thumbnailFolder)))
+
+    #Joins the thumbnail and the video
+    os.system("""ffmpeg -loglevel warning -i "%s" -i "%s" -map_metadata 0 -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v comment="Cover (front)" "%s" """%(pivotFile, thumbnail, path))
+
+
     # Cleans directories and removes unnecessary files
-    for f in os.listdir(thumbnailFolder):
-        if file.lower() != "thumbnail.jpg":
-            os.remove((os.path.join(thumbnailFolder, f)))
-    os.system("""rmdir "%s" """%thumbnailFolder)
-    os.system("""rmdir "%s" """%simpleImagesFolder)
-    os.remove(pivotFile)
+    # for f in os.listdir(thumbnailFolder):
+        # if file.lower() != "thumbnail.jpg":
+            # os.remove((os.path.join(thumbnailFolder, f)))
+    #os.system("""rmdir "%s" """%thumbnailFolder)
+    #os.system("""rmdir "%s" """%simpleImagesFolder)
+    # os.remove(pivotFile)

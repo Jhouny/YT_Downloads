@@ -12,11 +12,11 @@ def download(aud, location):
         aud.getbestaudio().download(filepath=location, quiet=True)      #Downloads the file to the given location
         logging.info("\tSuccesfully downloaded %s!"%(aud.title))
 
-        Cvt2Mp3(location, find(title, location)[1])    #Audio files usually come in .webm format, which some players cannot reproduce, so
+        fileLocation = Cvt2Mp3(location, find(title, location)[1])    #Audio files usually come in .webm format, which some players cannot reproduce, so
                                     #PyDub is used to convert them to .mp3
         logging.info("\tFile converted to mp3!")
 
-        GetMetadata(os.path.join(location, title+".mp3"), aud)    #Use Youtube video's metadata to add to the file's metadata
+        GetMetadata(fileLocation, aud)    #Use Youtube video's metadata to add to the file's metadata
         logging.info("\tMetadata updated!")
 
     else:
