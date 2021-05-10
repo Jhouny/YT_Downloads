@@ -61,7 +61,6 @@ if os.getcwd() != globalFolder:
     except FileExistsError:
         logging.critical(f"Delete the folder {globalFolder} before continuing")
 
-    """
     try:
         os.mkdir(os.path.join(globalFolder, "ffmpeg"))
         ffmpeg = os.path.join(globalFolder, "ffmpeg.zip")
@@ -72,16 +71,14 @@ if os.getcwd() != globalFolder:
         for file in os.listdir(zipFolder):
             shutil.move(os.path.join(zipFolder, file), os.path.join(globalFolder, "ffmpeg"))
 
-        ffmpegFolder = os.path.join(os.path.join(globalFolder, "ffmpeg"), "bin")"""
-        #subprocess.call(fr"""setx /M PATH "%PATH%;{ffmpegFolder}" """, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, shell=True)     #Add to PATH without output
-        # os.system(fr"""setx /M PATH "%PATH%;{}" """)
+        ffmpegFolder = os.path.join(os.path.join(globalFolder, "ffmpeg"), "bin")
+        subprocess.call(fr"""setx /M PATH "%PATH%;{ffmpegFolder}" """, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, shell=True)     #Add to PATH without output
         # ffmpegFolder = '/'.join((os.path.join(os.path.join(globalFolder, "ffmpeg"), "bin")).split('\\'))
         # ffmpegDisplay = os.path.join(os.path.join(globalFolder, "ffmpeg"), "bin")
         # print(f"\n\tThis folder must be added to system PATH: \t{ffmpegDisplay}\n")
-    """except Exception as e:
+    except Exception as e:
         print(e)
         proceed = False
-    """
 
 if not os.path.exists(os.path.join(globalFolder, 'config.txt')):
     destinationFolder = input("""\n\tWhere do you want the downloaded files to be stored? (In Windows, e.g. "C:\\Users\\~root~\\Music\\")\n\n\t\t>>> """)

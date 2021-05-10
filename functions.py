@@ -63,7 +63,6 @@ def TitleStandardization(title, forbiddenChars, simpleImDown_folder=False):
             T += "_"
         else:
             T += title[ind]
-    print(T)
     return T
 
 #Find if 'file' is in the 'path' provided
@@ -71,18 +70,18 @@ def find(file, path, ext='webm'):
     contains = False
     nm = ""
     asExt = False
-    for root, dirs, files in os.walk(path):
-        for name in files:
-            # if (name == file or ".".join(name.split('.')[:-1]) == file) and name.split('.')[-1] == ext:
-            if ( name == file or ".".join(name.split('.')[:-1]) == file ):
-                contains = True
-                nm = name
-                if name.split('.')[-1] == ext:      #If file exists, checks if the extension is the desired one
-                    asExt = True
-                break
-            else:
-                contains = False
-                nm = name
+    for name in os.listdir(path):
+        # if (name == file or ".".join(name.split('.')[:-1]) == file) and name.split('.')[-1] == ext:
+        if ( name == file or ".".join(name.split('.')[:-1]) == file ):
+            contains = True
+            nm = name
+            if name.split('.')[-1] == ext:      #If file exists, checks if the extension is the desired one
+                asExt = True
+            break
+        else:
+            contains = False
+            nm = name
+
     return contains, nm, asExt
 
 #Convert .webm file to .mp3
@@ -92,7 +91,6 @@ def Cvt2Mp3(loc, f_name):
     #
     file = os.path.join(loc, file_name)
     renamed = TitleStandardization(file_name, forbiddenChr)
-    print(renamed)
     rnmFile = os.path.join(loc, renamed)
     #
     aud_file = audio.from_file("%s"%(file+"."+file_type), format=file_type)          #Converting .webm file to .mp3
@@ -101,16 +99,6 @@ def Cvt2Mp3(loc, f_name):
     #
     return rnmFile+".mp3"
 
-def addVideoMetadata(file, aud):
-    #Provides metadata properties to the file
-    audio = EasyID3(path)
-    audio['artist'] = aud.author
-    audio['performer'] = aud.author
-    audio['composer'] = aud.author
-    audio['title'] = aud.title
-    audio['date'] = aud.published.split('-')[0]
-    audio['originaldate'] = aud.published.split('-')[0]
-    audio.save()
 
 def GetMetadata(file, aud):
     path = os.path.abspath(file)    #Get file's absolute path (as a string)
@@ -133,11 +121,20 @@ def GetMetadata(file, aud):
     #Joins the thumbnail and the video
     os.system("""ffmpeg -loglevel warning -i "%s" -i "%s" -map_metadata 0 -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v comment="Cover (front)" "%s" """%(pivotFile, thumbnail, path))
 
+    #Provides metadata properties to the file
+    audio = EasyID3(path)
+    audio['artist'] = aud.author
+    audio['performer'] = aud.author
+    audio['composer'] = aud.author
+    audio['title'] = aud.title
+    audio['date'] = aud.published.split('-')[0]
+    audio['originaldate'] = aud.published.split('-')[0]
+    audio.save()
 
     # Cleans directories and removes unnecessary files
-    # for f in os.listdir(thumbnailFolder):
-        # if file.lower() != "thumbnail.jpg":
-            # os.remove((os.path.join(thumbnailFolder, f)))
-    #os.system("""rmdir "%s" """%thumbnailFolder)
-    #os.system("""rmdir "%s" """%simpleImagesFolder)
-    # os.remove(pivotFile)
+    for f in os.listdir(thumbnailFolder):
+        if file.lower() != "thumbnail.jpg":
+            os.remove((os.path.join(thumbnailFolder, f)))
+    os.system("""rmdir "%s" """%thumbnailFolder)
+    os.system("""rmdir "%s" """%simpleImagesFolder)
+    os.remove(pivotFile)
